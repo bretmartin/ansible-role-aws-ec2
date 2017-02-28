@@ -1,0 +1,23 @@
+---
+
+- name: retrieve AMI platform
+  command: >
+    aws ec2 describe-images
+            --image-ids
+              '{{ _aws_ec2_i["image"] | default(aws_ec2_instance_defaults["image"]) }}'
+            --query 'Images[0].Platform'
+            --output text
+            --profile '{{ aws_profile }}'
+  register: _aws_ec2_image_platform
+  changed_when: False
+
+- name: 'construct {{ _aws_ec2_i["description"] }} instance user data'
+  set_fact:
+    _aws_ec2_user_data:
+      '{{ lookup("template",
+                 playbook_dir
+                 + "/roles/aws-ec2/templates/user_data/"
+                 + (_aws_ec2_image_platform.stdout
+                    if _aws_ec2_image_platform.stdout != "None"
+                    else "linux")
+                 + ".j2") }}'

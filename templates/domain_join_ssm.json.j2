@@ -1,0 +1,14 @@
+{
+    "schemaVersion": "1.0",
+    "description": "",
+    "runtimeConfig": {
+        "aws:domainJoin": {
+            "properties": {
+                "directoryId": "{{ aws_ec2_ds_id }}",
+                "directoryName": "{{ domain_member_realm }}",
+                "directoryOU": "{{ domain_member_ous[_aws_ec2_i['environment']] }}",
+                "dnsIpAddresses": {{ dns_servers | to_json }}
+            }
+        }
+    }
+}

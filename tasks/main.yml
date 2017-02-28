@@ -1,0 +1,73 @@
+---
+
+- name: set global facts
+  set_fact:
+    _aws_vpc_url: >-
+      https://console.aws.amazon.com/ec2/v2/home?region={{
+        aws_region }}#Instances:tag:VPC={{ aws_vpc_name }}
+
+
+- name: set target function and environment facts
+  set_fact:
+    _aws_ec2_functions: >
+      {{ aws_ec2_function.split(",")
+         if aws_ec2_function is defined else [""] }}
+    _aws_ec2_environments: >
+      {{ aws_ec2_environment.split(",")
+         if aws_ec2_environment is defined else [""] }}
+
+- name: call optional notifier
+  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  vars:
+    message: >
+      started running role <b>aws-ec2</b> on
+      <a href="{{ _aws_vpc_url }}">VPC {{ aws_vpc_name }}</a>{%
+      if _aws_ec2_functions != [""]
+      -%}, function {% for f in _aws_ec2_functions -%}
+      <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+        aws_region
+      }}#Instances:tag:Function={{ f }}">{{ f }}</a>{%
+      if not loop.last -%}, {% endif -%}{% endfor -%}{% endif -%}
+      {% if _aws_ec2_environments != [""]
+      -%}, environment {% for e in _aws_ec2_environments -%}
+      <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+        aws_region
+      }}#Instances:tag:Environment={{ e }}">{{ e }}</a>{%
+      if not loop.last -%}, {% endif -%}{% endfor -%}{% endif -%}
+  when: notifier_role is defined
+
+- include: roles/aws-vpc/tasks/vpc_id.yml
+
+- name: set all configured functions fact
+  set_fact:
+    _aws_ec2_all_functions: >-
+      {{ _aws_ec2_all_functions
+        | default([])
+        | union([item | basename | splitext | first]) }}
+  with_fileglob: 'host_vars/{{ inventory_hostname }}/ec2/*.yml'
+
+- name: set default target function fact
+  set_fact:
+    _aws_ec2_functions: '{{ _aws_ec2_all_functions }}'
+  when: '_aws_ec2_functions == [""]'
+
+- name: collect instance configuration data
+  include: instances.yml
+  vars:
+    _aws_ec2_function_file: >-
+      host_vars/{{ inventory_hostname }}/ec2/{{ item }}.yml
+  with_items: '{{ _aws_ec2_functions | difference(["defaults"]) }}'
+
+- name: launch named instances
+  include: instance.yml
+  vars:
+    instance: '{{ item }}'
+  with_items: '{{ _aws_ec2_all_instances }}'
+
+- name: call optional notifier
+  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  vars:
+    message: >
+      finished running role <b>aws-ec2</b> on
+      <a href="{{ _aws_vpc_url }}">VPC {{ aws_vpc_name }}</a>
+  when: notifier_role is defined

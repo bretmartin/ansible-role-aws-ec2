@@ -1,0 +1,19 @@
+---
+
+- name: >
+    read variables for function
+    "{{ _aws_ec2_function_file | basename | splitext | first }}"
+  include_vars: '{{ _aws_ec2_function_file }}'
+
+- name: add instance to those to be configured if it is in a named environment
+  set_fact:
+    _aws_ec2_all_instances: >-
+      {{ _aws_ec2_all_instances
+         | default([])
+         | union([item]) }}
+  with_items: '{{ aws_ec2_instances }}'
+  when: >
+    ( item.function in _aws_ec2_functions or
+      _aws_ec2_functions == [""] ) and
+    ( item.environment in _aws_ec2_environments or
+      _aws_ec2_environments == [""] )

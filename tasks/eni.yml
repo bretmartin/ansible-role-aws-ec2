@@ -1,0 +1,62 @@
+---
+
+- name: 'find {{ _aws_ec2_i["description"] }} network interface ID'
+  command: >
+    aws ec2 describe-network-interfaces
+            --filters
+              Name=tag:Name,Values='{{ _aws_ec2_i["function"] }}'
+              Name=tag:Environment,Values='{{ _aws_ec2_i["environment"] }}'
+              Name=tag:VPC,Values='{{ aws_vpc_name }}'
+              Name=vpc-id,Values='{{ _aws_vpc_id }}'
+            --query 'NetworkInterfaces[0].NetworkInterfaceId'
+            --output text
+            --profile '{{ aws_profile }}'
+  register: _aws_ec2_eni_id_search
+  changed_when: False
+
+- name: 'set {{ _aws_ec2_i["description"] }} network interface ID fact'
+  set_fact:
+    _aws_ec2_eni_id: '{{ _aws_ec2_eni_id_search.stdout }}'
+  when: _aws_ec2_eni_id_search.stdout != 'None'
+
+- block:
+
+    - name: 'create {{ _aws_ec2_i["description"] }} network interface'
+      ec2_eni:
+        profile: '{{ aws_profile }}'
+        private_ip_address: '{{ _aws_ec2_i["private_ip"] | default(omit) }}'
+        region: '{{ aws_region }}'
+        security_groups: '{{ _aws_ec2_i["group"] }}'
+        subnet_id: '{{ _aws_ec2_subnet }}'
+      register: _aws_ec2_eni_create
+
+    - name: 'set {{ _aws_ec2_i["description"] }} network interface ID fact'
+      set_fact:
+        _aws_ec2_eni_id: '{{ _aws_ec2_eni_create.interface.id }}'
+
+    - name: 'tag {{ _aws_ec2_i["description"] }} network interface'
+      ec2_tag:
+      args:
+        profile: '{{ aws_profile }}'
+        region: '{{ aws_region }}'
+        resource: '{{ _aws_ec2_eni_id }}'
+        tags:
+          Name: '{{ _aws_ec2_i["function"] }}'
+          Environment: '{{ _aws_ec2_i["environment"] }}'
+          VPC: '{{ aws_vpc_name }}'
+
+    - name:
+        'associate Elastic IP address with
+         {{ _aws_ec2_i["description"] }} network interface'
+      ec2_eip:
+        device_id: '{{ _aws_ec2_eni_id }}'
+        in_vpc: yes
+        profile: '{{ aws_profile }}'
+        public_ip: '{{ _aws_ec2_i["public_ip"] | default(omit) }}'
+        region: '{{ aws_region }}'
+      when: >
+        ( _aws_ec2_i["assign_public_ip"] is defined and
+          _aws_ec2_i["assign_public_ip"] ) or
+        _aws_ec2_i["public_ip"] is defined
+
+  when: _aws_ec2_eni_id_search.stdout == 'None'

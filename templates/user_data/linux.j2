@@ -1,0 +1,11 @@
+#cloud-config
+{% include "user_data/include/hostname.j2" %}
+{% if instance != "nat" %}
+
+
+runcmd:
+{% include "user_data/include/runcmd-bootstrap.j2" %}
+
+
+{% include "user_data/include/mounts.j2" %}
+{% endif %}

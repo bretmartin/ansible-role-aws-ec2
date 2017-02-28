@@ -1,0 +1,11 @@
+---
+
+- name:
+    'set {{ _aws_ec2_i["description"]}} network interface attributes'
+  ec2_eni:
+    eni_id: '{{ network_interface }}'
+    delete_on_termination: False
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+    source_dest_check: '{{ _aws_ec2_i["source_dest_check"] | default(omit) }}'
+    subnet_id: '{{ _aws_ec2_subnet }}'

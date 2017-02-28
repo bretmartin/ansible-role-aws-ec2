@@ -1,0 +1,164 @@
+---
+
+- name: set instance configuration fact
+  set_fact:
+    _aws_ec2_i: '{{ instance }}'
+
+- name: gather facts about existing instances matching this configuration
+  ec2_remote_facts:
+    filters:
+      instance-state-name:
+        ['pending', 'running', 'shutting-down', 'stopping', 'stopped']
+      'tag:Name':        '{{ _aws_ec2_i["hostname"] }}'
+      'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
+      'tag:Function':    '{{ _aws_ec2_i["function"] }}'
+      'tag:RI ID':       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
+      'tag:VPC':         '{{ aws_vpc_name }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  register: _aws_ec2_existing
+
+- block:
+    - include: roles/aws-ec2/tasks/subnet.yml
+    - include: roles/aws-ec2/tasks/user_data.yml
+  when: _aws_ec2_existing.instances | length == 0
+
+- name: clear _aws_ec2_launch from possible earlier launches
+  set_fact:
+    _aws_ec2_launch: {}
+
+- block:
+    - include: roles/aws-ec2/tasks/eni.yml
+    - include: roles/aws-ec2/tasks/instance_launch.yml
+      vars:
+        network_interface: '{{ _aws_ec2_eni_id }}'
+    - include: roles/aws-ec2/tasks/eni_attributes.yml
+      vars:
+        network_interface: '{{ _aws_ec2_eni_id }}'
+  when: >
+    _aws_ec2_i["eni"] is defined and
+    _aws_ec2_i["eni"] and
+    _aws_ec2_existing.instances | length == 0
+
+- include: roles/aws-ec2/tasks/instance_launch.yml
+  vars:
+    vpc_subnet_id: '{{ _aws_ec2_subnet | default(omit) }}'
+    group: '{{ _aws_ec2_i["group"] | default(omit) }}'
+    assign_public_ip: '{{ _aws_ec2_i["assign_public_ip"] | default(omit) }}'
+    private_ip: '{{ _aws_ec2_i["private_ip"] | default(omit) }}'
+    source_dest_check: '{{ _aws_ec2_i["source_dest_check"] | default(omit) }}'
+  when: >
+    (_aws_ec2_i["eni"] is not defined or
+     not _aws_ec2_i["eni"]) and
+    _aws_ec2_existing.instances | length == 0
+
+- include: roles/aws-ec2/tasks/domain-join.yml
+  when: >
+    _aws_ec2_launch.changed and
+    _aws_ec2_i["windows_domain_join"] is defined and
+    _aws_ec2_i["windows_domain_join"]
+
+- name: call optional notifier
+  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  vars:
+    message: >
+      launched <b>{{ _aws_ec2_i["description"] }} instance</b>
+      in <a href="{{ _aws_vpc_url }}">VPC {{ aws_vpc_name }}</a>
+    attachments:
+      - text:
+        fields:
+
+          - title: Name
+            value: '{{ _aws_ec2_i["hostname"] }}.{{ domain_name }}'
+            short: true
+          - title: Private IP Address
+            value: '{{ _aws_ec2_launch["instances"][0]["private_ip"] }}'
+            short: true
+
+          - title: Environment
+            value: >
+              <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#Instances:tag:Environment={{
+                _aws_ec2_i["environment"]
+              }}">{{
+                _aws_ec2_i["environment"]
+              }}</a>
+            short: true
+          - title: Function
+            value: >
+              <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#Instances:tag:Function={{
+                _aws_ec2_i["function"]
+              }}">{{
+                _aws_ec2_i["function"]
+              }}</a>
+            short: true
+
+          - title: Instance ID
+            value: >
+              <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#Instances:instanceId={{
+                _aws_ec2_launch["instance_ids"][0]
+              }}">{{
+                _aws_ec2_launch["instance_ids"][0]
+              }}</a>
+            short: true
+          - title: Instance Type
+            value: >
+              <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#Instances:instanceType={{
+                _aws_ec2_launch["instances"][0]["instance_type"]
+              }}">{{
+                _aws_ec2_launch["instances"][0]["instance_type"]
+              }}</a>
+            short: true
+
+          - title: Availability Zone
+            value: >
+              <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#Instances:availabilityZone={{
+                _aws_ec2_launch["instances"][0]["placement"]
+              }}">{{
+                _aws_ec2_launch["instances"][0]["placement"]
+              }}</a>
+            short: true
+          - title: Subnet
+            value: >
+              <a href="https://console.aws.amazon.com/vpc/home?region={{
+                aws_region
+              }}#subnets:filter={{
+                _aws_ec2_subnet
+              }}">{{
+                _aws_ec2_subnet
+              }}</a>
+              (Type: <a href="https://console.aws.amazon.com/vpc/home?region={{
+                aws_region
+              }}#subnets:filter={{
+                _aws_ec2_i["subnet_type"] | urlencode()
+              }}">{{
+                _aws_ec2_i["subnet_type"]
+              }}</a>)
+            short: true
+
+          - title: Security Groups
+            value: >
+              {% for group in _aws_ec2_i["group"]
+              %}<a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#SecurityGroups:groupName=^{{
+                group
+              }}$;vpcId={{
+                _aws_vpc_id
+              }}">{{ group }}</a>{%
+              if not loop.last -%}, {% endif -%}
+              {% endfor -%}
+            short: false
+
+  when: >
+    notifier_role is defined and
+    _aws_ec2_launch.changed

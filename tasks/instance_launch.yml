@@ -1,0 +1,54 @@
+---
+
+- name: 'create {{ _aws_ec2_i["description"] }} instance'
+
+  ec2:
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+
+    key_name: >-
+      {{ _aws_ec2_i["key_name"]
+         | default(aws_ec2_instance_defaults["key_name"]) }}
+    instance_type: >-
+      {{ _aws_ec2_i["type"] | default(aws_ec2_instance_defaults["type"]) }}
+    image: >-
+      {{ _aws_ec2_i["image"] | default(aws_ec2_instance_defaults["image"]) }}
+
+    wait: True
+
+    instance_profile_name: >-
+      {{ _aws_ec2_i["profile"]
+         | default(aws_ec2_instance_defaults["profile"])
+         | default(omit) }}
+
+    user_data: '{{ _aws_ec2_user_data | default(omit) }}'
+
+    instance_tags:
+      Name:        '{{ _aws_ec2_i["hostname"] }}'
+      Environment: '{{ _aws_ec2_i["environment"] }}'
+      Function:    '{{ _aws_ec2_i["function"] }}'
+      RI ID:       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
+      VPC:         '{{ aws_vpc_name }}'
+
+    count_tag:
+      Name:        '{{ _aws_ec2_i["hostname"] }}'
+      Environment: '{{ _aws_ec2_i["environment"] }}'
+      Function:    '{{ _aws_ec2_i["function"] }}'
+      RI ID:       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
+      VPC:         '{{ aws_vpc_name }}'
+
+    exact_count:   1
+
+    vpc_subnet_id:     '{{ vpc_subnet_id     | default(omit) }}'
+    group:             '{{ group             | default(omit) }}'
+    assign_public_ip:  '{{ assign_public_ip  | default(omit) }}'
+    private_ip:        '{{ private_ip        | default(omit) }}'
+    source_dest_check: '{{ source_dest_check | default(omit) }}'
+
+    network_interface: '{{ network_interface | default(omit) }}'
+
+    volumes: >-
+      {{ _aws_ec2_i["volumes"]
+         | default(aws_ec2_instance_defaults["volumes"]) }}
+
+  register: _aws_ec2_launch

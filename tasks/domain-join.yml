@@ -1,0 +1,49 @@
+---
+
+- name: set SSM document name fact
+  set_fact:
+    _aws_ec2_domain_join_ssm_document: >-
+      domain-join_{{ aws_ec2_ds_id }}_{{
+        domain_member_realm }}_{{ _aws_ec2_i["environment"] }}
+
+- name: check for existing domain join SSM document
+  command: >
+    aws ssm list-documents
+            --query
+              'DocumentIdentifiers[*]
+               | [?Name == `{{ _aws_ec2_domain_join_ssm_document }}`].Name'
+            --max-results 25
+            --output text
+            --profile '{{ aws_profile }}'
+  register: _aws_ec2_existing_ssm_document
+  changed_when: False
+
+- block:
+
+    - name: template domain join SSM document
+      template:
+        src:           domain_join_ssm.json.j2
+        dest: '/tmp/{{ _aws_ec2_domain_join_ssm_document }}.json'
+        mode: 0600
+
+    - name: create domain join SSM document
+      command: >
+        aws ssm create-document
+                               --name {{ _aws_ec2_domain_join_ssm_document }}
+                --content file:///tmp/{{ _aws_ec2_domain_join_ssm_document }}.json
+                --profile '{{ aws_profile }}'
+
+    - name: remove local domain join SSM document
+      file:
+        path: '/tmp/{{ _aws_ec2_domain_join_ssm_document }}.json'
+        state: absent
+
+  when: >
+    _aws_ec2_existing_ssm_document.stdout != _aws_ec2_domain_join_ssm_document
+
+- name: associate SSM configuration document for domain join
+  command: >
+    aws ssm create-association
+            --instance-id {{ _aws_ec2_launch["instance_ids"][0] }}
+            --name {{ _aws_ec2_domain_join_ssm_document }}
+            --profile '{{ aws_profile }}'
