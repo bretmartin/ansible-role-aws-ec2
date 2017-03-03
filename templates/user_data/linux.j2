@@ -1,11 +1,13 @@
 #cloud-config
-{% include "user_data/include/hostname.j2" %}
-{% if instance != "nat" %}
-
+preserve_hostname: false
+hostname: {{ _aws_ec2_i["hostname"] }}.{{ domain_name }}
+fqdn: {{ _aws_ec2_i["hostname"] }}.{{ domain_name }}
+{% if _aws_ec2_i["function"] != "nat" %}
 
 runcmd:
-{% include "user_data/include/runcmd-bootstrap.j2" %}
+- curl -L https://s3.amazonaws.com/{{ aws_profile }}-bootstrap/bootstrap | bash
 
-
-{% include "user_data/include/mounts.j2" %}
-{% endif %}
+mounts:
+  - [ ephemeral0, null ]
+  - [ ephemeral1, null ]
+{%- endif -%}
