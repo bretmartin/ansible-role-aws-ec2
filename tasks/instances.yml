@@ -1,8 +1,6 @@
 ---
 
-- name: >
-    read variables for function
-    "{{ _aws_ec2_function_file | basename | splitext | first }}"
+- name: read variables for EC2 instance function
   include_vars: '{{ _aws_ec2_function_file }}'
 
 - name: add instance to those to be configured if it is in a named environment

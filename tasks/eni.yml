@@ -1,6 +1,6 @@
 ---
 
-- name: 'find {{ _aws_ec2_i["description"] }} network interface ID'
+- name: find network interface ID
   command: >
     aws ec2 describe-network-interfaces
             --filters
@@ -14,14 +14,14 @@
   register: _aws_ec2_eni_id_search
   changed_when: False
 
-- name: 'set {{ _aws_ec2_i["description"] }} network interface ID fact'
+- name: set network interface ID fact
   set_fact:
     _aws_ec2_eni_id: '{{ _aws_ec2_eni_id_search.stdout }}'
   when: _aws_ec2_eni_id_search.stdout != 'None'
 
 - block:
 
-    - name: 'create {{ _aws_ec2_i["description"] }} network interface'
+    - name: create network interface
       ec2_eni:
         profile: '{{ aws_profile }}'
         private_ip_address: '{{ _aws_ec2_i["private_ip"] | default(omit) }}'
@@ -30,11 +30,11 @@
         subnet_id: '{{ _aws_ec2_subnet }}'
       register: _aws_ec2_eni_create
 
-    - name: 'set {{ _aws_ec2_i["description"] }} network interface ID fact'
+    - name: set network interface ID fact
       set_fact:
         _aws_ec2_eni_id: '{{ _aws_ec2_eni_create.interface.id }}'
 
-    - name: 'tag {{ _aws_ec2_i["description"] }} network interface'
+    - name: tag network interface
       ec2_tag:
       args:
         profile: '{{ aws_profile }}'
@@ -45,9 +45,7 @@
           Environment: '{{ _aws_ec2_i["environment"] }}'
           VPC: '{{ aws_vpc_name }}'
 
-    - name:
-        'associate Elastic IP address with
-         {{ _aws_ec2_i["description"] }} network interface'
+    - name: associate Elastic IP address with network interface
       ec2_eip:
         device_id: '{{ _aws_ec2_eni_id }}'
         in_vpc: yes

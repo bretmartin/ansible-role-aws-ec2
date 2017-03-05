@@ -11,7 +11,7 @@
   register: _aws_ec2_image_platform
   changed_when: False
 
-- name: 'construct {{ _aws_ec2_i["description"] }} instance user data'
+- name: construct instance user data
   set_fact:
     _aws_ec2_user_data:
       '{{ lookup("template",

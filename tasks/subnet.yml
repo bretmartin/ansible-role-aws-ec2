@@ -1,10 +1,6 @@
 ---
 
-- name:
-    'list
-     {{ _aws_ec2_i["subnet_type"] }} subnets
-     {% if _aws_ec2_i["az"] is defined %}in AZ {{ _aws_ec2_i["az"] }} {% endif -%}
-     for {{ _aws_ec2_i["description"] }} instance'
+- name: list subnets matching specified type and availability zone
   command: >
     aws ec2 describe-subnets
             --query 'Subnets[?VpcId == `{{ _aws_vpc_id }}` &&
@@ -27,6 +23,6 @@
   when: >
     _aws_ec2_subnet.stdout == '[]'
 
-- name: 'select one {{ _aws_ec2_i["subnet_type"] }} subnet from results'
+- name: select a random subnet from results
   set_fact:
     _aws_ec2_subnet: '{{ _aws_ec2_subnet.stdout | from_json | random }}'

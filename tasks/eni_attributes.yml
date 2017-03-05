@@ -1,7 +1,6 @@
 ---
 
-- name:
-    'set {{ _aws_ec2_i["description"]}} network interface attributes'
+- name: set network interface attributes
   ec2_eni:
     eni_id: '{{ network_interface }}'
     delete_on_termination: False

@@ -4,7 +4,7 @@
   set_fact:
     _aws_ec2_i: '{{ instance }}'
 
-- name: gather facts about existing instances matching this configuration
+- name: check for existing instances
   ec2_remote_facts:
     filters:
       instance-state-name:

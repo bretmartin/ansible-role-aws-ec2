@@ -1,6 +1,6 @@
 ---
 
-- name: 'create {{ _aws_ec2_i["description"] }} instance'
+- name: launch instance
 
   ec2:
     profile: '{{ aws_profile }}'
