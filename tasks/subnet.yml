@@ -1,18 +1,14 @@
 ---
 
 - name: list subnets matching specified type and availability zone
-  command: >
-    aws ec2 describe-subnets
-            --query 'Subnets[?VpcId == `{{ _aws_vpc_id }}` &&
-                              {% if _aws_ec2_i["az"] is defined -%}
-                              AvailabilityZone == `{{ _aws_ec2_i["az"] }}` &&
-                              {% endif -%}
-                              Tags[?Key == `Name` &&
-                                    Value == `{{ _aws_ec2_i["subnet_type"] }}`]]
-                     .SubnetId'
-            --profile '{{ aws_profile }}'
-  register: _aws_ec2_subnet
-  changed_when: False
+  ec2_vpc_subnet_facts:
+    filters:
+      availability-zone: '{{ _aws_ec2_i["az"] | default("*") }}'
+      'tag:Name': '{{ _aws_ec2_i["subnet_type"] }}'
+      vpc-id: '{{ _aws_vpc_id }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  register: _aws_ec2_subnet_facts
 
 - name: fail if no matching subnets were found
   fail:
@@ -20,9 +16,11 @@
       no {{ _aws_ec2_i["subnet_type"] }} subnets
       {% if _aws_ec2_i["az"] is defined %}in AZ {{ _aws_ec2_i["az"] }} {% endif -%}
       were found
-  when: >
-    _aws_ec2_subnet.stdout == '[]'
+  when: _aws_ec2_subnet_facts.subnets | length == 0
 
 - name: select a random subnet from results
   set_fact:
-    _aws_ec2_subnet: '{{ _aws_ec2_subnet.stdout | from_json | random }}'
+    _aws_ec2_subnet: >-
+      {{ _aws_ec2_subnet_facts.subnets
+         | json_query("[].id")
+         | random }}
