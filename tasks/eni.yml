@@ -1,23 +1,20 @@
 ---
 
 - name: find network interface ID
-  command: >
-    aws ec2 describe-network-interfaces
-            --filters
-              Name=tag:Name,Values='{{ _aws_ec2_i["function"] }}'
-              Name=tag:Environment,Values='{{ _aws_ec2_i["environment"] }}'
-              Name=tag:VPC,Values='{{ aws_vpc_name }}'
-              Name=vpc-id,Values='{{ _aws_vpc_id }}'
-            --query 'NetworkInterfaces[0].NetworkInterfaceId'
-            --output text
-            --profile '{{ aws_profile }}'
-  register: _aws_ec2_eni_id_search
-  changed_when: False
+  ec2_eni_facts:
+    filters:
+      'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
+      'tag:Name': '{{ _aws_ec2_i["function"] }}'
+      vpc-id: '{{ _aws_vpc_id }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  register: _aws_ec2_eni_facts
 
 - name: set network interface ID fact
   set_fact:
-    _aws_ec2_eni_id: '{{ _aws_ec2_eni_id_search.stdout }}'
-  when: _aws_ec2_eni_id_search.stdout != 'None'
+    _aws_ec2_eni_id: >-
+      {{ _aws_ec2_eni_facts.network_interfaces[0].network_interface_id }}
+  when: _aws_ec2_eni_facts.network_interfaces | length == 1
 
 - block:
 
@@ -57,4 +54,4 @@
           _aws_ec2_i["assign_public_ip"] ) or
         _aws_ec2_i["public_ip"] is defined
 
-  when: _aws_ec2_eni_id_search.stdout == 'None'
+  when: _aws_ec2_eni_facts.network_interfaces | length == 0
