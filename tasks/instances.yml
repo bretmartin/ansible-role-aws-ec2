@@ -8,10 +8,12 @@
     _aws_ec2_all_instances: >-
       {{ _aws_ec2_all_instances
          | default([])
-         | union([item]) }}
+         | union([instance]) }}
   with_items: '{{ aws_ec2_instances }}'
   when: >
-    ( item.function in _aws_ec2_functions or
+    ( instance.function in _aws_ec2_functions or
       _aws_ec2_functions == [""] ) and
-    ( item.environment in _aws_ec2_environments or
+    ( instance.environment in _aws_ec2_environments or
       _aws_ec2_environments == [""] )
+  loop_control:
+    loop_var: instance
