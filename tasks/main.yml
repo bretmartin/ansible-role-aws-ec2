@@ -52,7 +52,7 @@
   when: '_aws_ec2_target_functions == [""]'
 
 - name: collect target instance configuration data
-  include: instances.yml
+  include: instances_load_vars.yml
   vars:
     _aws_ec2_function_file: >-
       host_vars/{{ inventory_hostname }}/ec2/{{ item }}.yml
