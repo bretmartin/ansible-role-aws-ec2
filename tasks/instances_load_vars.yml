@@ -15,6 +15,10 @@
   when: >
     'aws_ec2_instances' in _aws_ec2_vars
   loop_control:
+    label: >-
+      function {{ instance.function }},
+      environment {{ instance.environment }},
+      hostname {{ instance.hostname }}'
     loop_var: instance
 
 - name: add instance to target list if function and environment match
@@ -31,4 +35,8 @@
     ( instance.environment in _aws_ec2_target_environments or
       _aws_ec2_target_environments == [""] )
   loop_control:
+    label: >-
+      function {{ instance.function }},
+      environment {{ instance.environment }},
+      hostname {{ instance.hostname }}'
     loop_var: instance

@@ -50,6 +50,11 @@
   vars:
     instance: '{{ item }}'
   with_items: '{{ _aws_ec2_target_instances }}'
+  loop_control:
+    label: >-
+      function {{ instance.function }},
+      environment {{ instance.environment }},
+      hostname {{ instance.hostname }}'
 
 - name: call optional notifier
   include: 'roles/{{ notifier_role }}/tasks/main.yml'
