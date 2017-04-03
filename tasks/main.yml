@@ -36,7 +36,8 @@
       if not loop.last -%}, {% endif -%}{% endfor -%}{% endif -%}
   when: notifier_role is defined
 
-- include: roles/aws-vpc/tasks/vpc_id.yml
+- name: find VPC ID
+  include: roles/aws-vpc/tasks/vpc_id.yml
 
 - name: set variables files list fact
   set_fact:

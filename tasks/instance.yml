@@ -19,8 +19,13 @@
   register: _aws_ec2_existing
 
 - block:
-    - include: roles/aws-ec2/tasks/subnet.yml
-    - include: roles/aws-ec2/tasks/user_data.yml
+
+    - name: select a subnet
+      include: roles/aws-ec2/tasks/subnet.yml
+
+    - name: construct instance user data
+      include: roles/aws-ec2/tasks/user_data.yml
+
   when: _aws_ec2_existing.instances | length == 0
 
 - name: clear _aws_ec2_launch from possible earlier launches
@@ -28,19 +33,27 @@
     _aws_ec2_launch: {}
 
 - block:
-    - include: roles/aws-ec2/tasks/eni.yml
-    - include: roles/aws-ec2/tasks/instance_launch.yml
+
+    - name: configure Elastic Network Interface
+      include: roles/aws-ec2/tasks/eni.yml
+
+    - name: launch EC2 instance using configured network interface
+      include: roles/aws-ec2/tasks/instance_launch.yml
       vars:
         network_interface: '{{ _aws_ec2_eni_id }}'
-    - include: roles/aws-ec2/tasks/eni_attributes.yml
+
+    - name: set network interface attributes
+      include: roles/aws-ec2/tasks/eni_attributes.yml
       vars:
         network_interface: '{{ _aws_ec2_eni_id }}'
+
   when: >
     _aws_ec2_i["eni"] is defined and
     _aws_ec2_i["eni"] and
     _aws_ec2_existing.instances | length == 0
 
-- include: roles/aws-ec2/tasks/instance_launch.yml
+- name: launch EC2 instance
+  include: roles/aws-ec2/tasks/instance_launch.yml
   vars:
     vpc_subnet_id: '{{ _aws_ec2_subnet | default(omit) }}'
     group: '{{ _aws_ec2_i["group"] | default(omit) }}'
@@ -52,7 +65,8 @@
      not _aws_ec2_i["eni"]) and
     _aws_ec2_existing.instances | length == 0
 
-- include: roles/aws-ec2/tasks/instance_windows_domain_join.yml
+- name: configure Windows domain join with EC2 Systems Manager
+  include: roles/aws-ec2/tasks/instance_windows_domain_join.yml
   when: >
     _aws_ec2_launch.changed and
     _aws_ec2_i["windows_domain_join"] is defined and
