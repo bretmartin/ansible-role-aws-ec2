@@ -51,14 +51,14 @@
     _aws_ec2_target_functions: '{{ _aws_ec2_configured_functions }}'
   when: '_aws_ec2_target_functions == [""]'
 
-- name: collect instance configuration data
+- name: collect target instance configuration data
   include: instances.yml
   vars:
     _aws_ec2_function_file: >-
       host_vars/{{ inventory_hostname }}/ec2/{{ item }}.yml
   with_items: '{{ _aws_ec2_target_functions | difference(["defaults"]) }}'
 
-- name: launch named instances
+- name: launch target instances
   include: instance.yml
   vars:
     instance: '{{ item }}'
