@@ -1,5 +1,9 @@
 ---
 
+- name: clear aws_ec2_instances from earlier includes
+  set_fact:
+    aws_ec2_instances: []
+
 - name: read variables for EC2 instance function
   include_vars: '{{ _aws_ec2_function_file }}'
 
