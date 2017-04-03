@@ -39,25 +39,11 @@
 - name: find VPC ID
   include: roles/aws-vpc/tasks/vpc_id.yml
 
-- name: set variables files list fact
-  set_fact:
-    _aws_ec2_vars_files: >-
-      {{ _aws_ec2_vars_files
-        | default([])
-        | union([item | basename | splitext | first]) }}
-  with_fileglob: 'host_vars/{{ inventory_hostname }}/ec2/*.yml'
-
-- name: set default target function fact
-  set_fact:
-    _aws_ec2_target_functions: '{{ _aws_ec2_vars_files }}'
-  when: '_aws_ec2_target_functions == [""]'
-
 - name: collect instance configuration data
   include: instances_load_vars.yml
-  vars:
-    _aws_ec2_function_file: >-
-      host_vars/{{ inventory_hostname }}/ec2/{{ item }}.yml
-  with_items: '{{ _aws_ec2_vars_files | difference(["defaults"]) }}'
+  with_fileglob: 'host_vars/{{ inventory_hostname }}/ec2/*.yml'
+  loop_control:
+    loop_var: _aws_ec2_vars_file
 
 - name: launch target instances
   include: instance.yml

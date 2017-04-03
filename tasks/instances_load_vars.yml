@@ -1,18 +1,19 @@
 ---
 
-- name: clear aws_ec2_instances from earlier includes
-  include_vars: instances_empty.yml
+- name: read variables
+  include_vars:
+    file: '{{ _aws_ec2_vars_file }}'
+    name: _aws_ec2_vars
 
-- name: read variables for EC2 instance function
-  include_vars: '{{ _aws_ec2_function_file }}'
-
-- name: add instance to configured list
+- name: add instances to configured list
   set_fact:
     _aws_ec2_configured_instances: >-
       {{ _aws_ec2_configured_instances
          | default([])
          | union([instance]) }}
-  with_items: '{{ aws_ec2_instances }}'
+  with_items: '{{ _aws_ec2_vars["aws_ec2_instances"] }}'
+  when: >
+    'aws_ec2_instances' in _aws_ec2_vars
   loop_control:
     loop_var: instance
 
@@ -22,8 +23,9 @@
       {{ _aws_ec2_target_instances
          | default([])
          | union([instance]) }}
-  with_items: '{{ aws_ec2_instances }}'
+  with_items: '{{ _aws_ec2_vars["aws_ec2_instances"] }}'
   when: >
+    'aws_ec2_instances' in _aws_ec2_vars and
     ( instance.function in _aws_ec2_target_functions or
       _aws_ec2_target_functions == [""] ) and
     ( instance.environment in _aws_ec2_target_environments or
