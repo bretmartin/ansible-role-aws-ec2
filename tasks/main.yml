@@ -9,7 +9,7 @@
 
 - name: set target function and environment facts
   set_fact:
-    _aws_ec2_functions: >
+    _aws_ec2_target_functions: >
       {{ aws_ec2_function.split(",")
          if aws_ec2_function is defined else [""] }}
     _aws_ec2_environments: >
@@ -22,8 +22,8 @@
     message: >
       started running role <b>aws-ec2</b> on
       <a href="{{ _aws_vpc_url }}">VPC {{ aws_vpc_name }}</a>{%
-      if _aws_ec2_functions != [""]
-      -%}, function {% for f in _aws_ec2_functions -%}
+      if _aws_ec2_target_functions != [""]
+      -%}, function {% for f in _aws_ec2_target_functions -%}
       <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
         aws_region
       }}#Instances:tag:Function={{ f }}">{{ f }}</a>{%
@@ -48,15 +48,15 @@
 
 - name: set default target function fact
   set_fact:
-    _aws_ec2_functions: '{{ _aws_ec2_all_functions }}'
-  when: '_aws_ec2_functions == [""]'
+    _aws_ec2_target_functions: '{{ _aws_ec2_all_functions }}'
+  when: '_aws_ec2_target_functions == [""]'
 
 - name: collect instance configuration data
   include: instances.yml
   vars:
     _aws_ec2_function_file: >-
       host_vars/{{ inventory_hostname }}/ec2/{{ item }}.yml
-  with_items: '{{ _aws_ec2_functions | difference(["defaults"]) }}'
+  with_items: '{{ _aws_ec2_target_functions | difference(["defaults"]) }}'
 
 - name: launch named instances
   include: instance.yml

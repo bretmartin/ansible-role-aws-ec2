@@ -11,8 +11,8 @@
          | union([instance]) }}
   with_items: '{{ aws_ec2_instances }}'
   when: >
-    ( instance.function in _aws_ec2_functions or
-      _aws_ec2_functions == [""] ) and
+    ( instance.function in _aws_ec2_target_functions or
+      _aws_ec2_target_functions == [""] ) and
     ( instance.environment in _aws_ec2_environments or
       _aws_ec2_environments == [""] )
   loop_control:
