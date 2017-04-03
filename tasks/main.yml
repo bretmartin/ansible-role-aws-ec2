@@ -13,8 +13,8 @@
       {{ aws_ec2_target_function.split(",")
          if aws_ec2_target_function is defined else [""] }}
     _aws_ec2_target_environments: >
-      {{ aws_ec2_environment.split(",")
-         if aws_ec2_environment is defined else [""] }}
+      {{ aws_ec2_target_environment.split(",")
+         if aws_ec2_target_environment is defined else [""] }}
 
 - name: call optional notifier
   include: 'roles/{{ notifier_role }}/tasks/main.yml'
