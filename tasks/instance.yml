@@ -52,7 +52,7 @@
      not _aws_ec2_i["eni"]) and
     _aws_ec2_existing.instances | length == 0
 
-- include: roles/aws-ec2/tasks/domain-join.yml
+- include: roles/aws-ec2/tasks/instance_windows_domain_join.yml
   when: >
     _aws_ec2_launch.changed and
     _aws_ec2_i["windows_domain_join"] is defined and
