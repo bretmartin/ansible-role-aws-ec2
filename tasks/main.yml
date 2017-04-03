@@ -10,8 +10,8 @@
 - name: set target function and environment facts
   set_fact:
     _aws_ec2_target_functions: >
-      {{ aws_ec2_function.split(",")
-         if aws_ec2_function is defined else [""] }}
+      {{ aws_ec2_target_function.split(",")
+         if aws_ec2_target_function is defined else [""] }}
     _aws_ec2_target_environments: >
       {{ aws_ec2_environment.split(",")
          if aws_ec2_environment is defined else [""] }}
