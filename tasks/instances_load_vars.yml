@@ -10,33 +10,33 @@
     _aws_ec2_configured_instances: >-
       {{ _aws_ec2_configured_instances
          | default([])
-         | union([instance]) }}
+         | union([_aws_ec2_i]) }}
   with_items: '{{ _aws_ec2_vars["aws_ec2_instances"] }}'
   when: >
     'aws_ec2_instances' in _aws_ec2_vars
   loop_control:
     label: >-
-      function {{ instance.function }},
-      environment {{ instance.environment }},
-      hostname {{ instance.hostname }}'
-    loop_var: instance
+      function {{ _aws_ec2_i.function }},
+      environment {{ _aws_ec2_i.environment }},
+      hostname {{ _aws_ec2_i.hostname }}'
+    loop_var: _aws_ec2_i
 
 - name: add instance to target list if function and environment match
   set_fact:
     _aws_ec2_target_instances: >-
       {{ _aws_ec2_target_instances
          | default([])
-         | union([instance]) }}
+         | union([_aws_ec2_i]) }}
   with_items: '{{ _aws_ec2_vars["aws_ec2_instances"] }}'
   when: >
     'aws_ec2_instances' in _aws_ec2_vars and
-    ( instance.function in _aws_ec2_target_functions or
+    ( _aws_ec2_i.function in _aws_ec2_target_functions or
       _aws_ec2_target_functions == [""] ) and
-    ( instance.environment in _aws_ec2_target_environments or
+    ( _aws_ec2_i.environment in _aws_ec2_target_environments or
       _aws_ec2_target_environments == [""] )
   loop_control:
     label: >-
-      function {{ instance.function }},
-      environment {{ instance.environment }},
-      hostname {{ instance.hostname }}'
-    loop_var: instance
+      function {{ _aws_ec2_i.function }},
+      environment {{ _aws_ec2_i.environment }},
+      hostname {{ _aws_ec2_i.hostname }}'
+    loop_var: _aws_ec2_i
