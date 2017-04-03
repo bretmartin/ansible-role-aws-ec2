@@ -13,7 +13,7 @@
   when: >
     ( instance.function in _aws_ec2_target_functions or
       _aws_ec2_target_functions == [""] ) and
-    ( instance.environment in _aws_ec2_environments or
-      _aws_ec2_environments == [""] )
+    ( instance.environment in _aws_ec2_target_environments or
+      _aws_ec2_target_environments == [""] )
   loop_control:
     loop_var: instance

@@ -12,7 +12,7 @@
     _aws_ec2_target_functions: >
       {{ aws_ec2_function.split(",")
          if aws_ec2_function is defined else [""] }}
-    _aws_ec2_environments: >
+    _aws_ec2_target_environments: >
       {{ aws_ec2_environment.split(",")
          if aws_ec2_environment is defined else [""] }}
 
@@ -28,8 +28,8 @@
         aws_region
       }}#Instances:tag:Function={{ f }}">{{ f }}</a>{%
       if not loop.last -%}, {% endif -%}{% endfor -%}{% endif -%}
-      {% if _aws_ec2_environments != [""]
-      -%}, environment {% for e in _aws_ec2_environments -%}
+      {% if _aws_ec2_target_environments != [""]
+      -%}, environment {% for e in _aws_ec2_target_environments -%}
       <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
         aws_region
       }}#Instances:tag:Environment={{ e }}">{{ e }}</a>{%
