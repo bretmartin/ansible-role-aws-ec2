@@ -3,10 +3,10 @@
 - name: read variables for EC2 instance function
   include_vars: '{{ _aws_ec2_function_file }}'
 
-- name: add instance to those to be configured if it is in a named environment
+- name: add instance to target list if it is in a target environment
   set_fact:
-    _aws_ec2_all_instances: >-
-      {{ _aws_ec2_all_instances
+    _aws_ec2_target_instances: >-
+      {{ _aws_ec2_target_instances
          | default([])
          | union([instance]) }}
   with_items: '{{ aws_ec2_instances }}'

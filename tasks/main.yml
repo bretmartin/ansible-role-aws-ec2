@@ -62,7 +62,7 @@
   include: instance.yml
   vars:
     instance: '{{ item }}'
-  with_items: '{{ _aws_ec2_all_instances }}'
+  with_items: '{{ _aws_ec2_target_instances }}'
 
 - name: call optional notifier
   include: 'roles/{{ notifier_role }}/tasks/main.yml'
