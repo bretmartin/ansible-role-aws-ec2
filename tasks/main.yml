@@ -45,6 +45,16 @@
   loop_control:
     loop_var: _aws_ec2_vars_file
 
+- name: audit untracked security groups
+  include: instance_sgs.yml
+  with_items: '{{ _aws_ec2_target_instances }}'
+  loop_control:
+    label: >-
+      function {{ _aws_ec2_i.function }},
+      environment {{ _aws_ec2_i.environment }},
+      hostname {{ _aws_ec2_i.hostname }}'
+    loop_var: _aws_ec2_i
+
 - name: launch target instances
   include: instance.yml
   with_items: '{{ _aws_ec2_target_instances }}'
@@ -54,6 +64,7 @@
       environment {{ _aws_ec2_i.environment }},
       hostname {{ _aws_ec2_i.hostname }}'
     loop_var: _aws_ec2_i
+
 
 - name: call optional notifier
   include: 'roles/{{ notifier_role }}/tasks/main.yml'

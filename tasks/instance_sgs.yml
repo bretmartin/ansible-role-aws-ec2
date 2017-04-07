@@ -1,5 +1,13 @@
 ---
 
+- name: clear previous aws_ec2_existing facts
+  set_fact:
+    _aws_ec2_existing: {}
+
+- name: clear previous _aws_ec2_untracked_security_groups facts
+  set_fact:
+    _aws_ec2_untracked_security_groups: {}
+
 - name: check for existing instances
   ec2_remote_facts:
     filters:
@@ -18,16 +26,22 @@
   set_fact:
     _aws_ec2_existing_security_groups: >
      {{ _aws_ec2_existing.instances[0] | json_query('groups[*].name') | sort }}
+  when: >
+     _aws_ec2_existing.instances | length >= 1
 
 - name: set Ansible EC2 config file security groups fact
   set_fact:
     _aws_ec2_ansible_security_groups: >
      {{ _aws_ec2_i['group'] | default(omit)  | sort }}
+  when: >
+     _aws_ec2_existing.instances | length >= 1
 
 - name: check for security groups not controlled by ansible
   set_fact:
     _aws_ec2_untracked_security_groups: >
      {{ _aws_ec2_existing_security_groups | difference(_aws_ec2_ansible_security_groups) | sort }}
+  when: >
+     _aws_ec2_existing.instances | length >= 1
 
 - name: call optional notifier for untracked ec2 instance security groups
   include: 'roles/{{ notifier_role }}/tasks/main.yml'
@@ -64,4 +78,4 @@
 
   when: >
    notifier_role is defined and
-   _aws_ec2_untracked_security_groups | length != 0
+   _aws_ec2_untracked_security_groups | length >= 1
