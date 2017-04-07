@@ -1,0 +1,67 @@
+---
+
+- name: check for existing instances
+  ec2_remote_facts:
+    filters:
+      instance-state-name:
+        ['pending', 'running', 'shutting-down', 'stopping', 'stopped']
+      'tag:Name':        '{{ _aws_ec2_i["hostname"] }}'
+      'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
+      'tag:Function':    '{{ _aws_ec2_i["function"] }}'
+      'tag:RI ID':       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
+      'tag:VPC':         '{{ aws_vpc_name }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  register: _aws_ec2_existing
+
+- name: set ec2 AWS security groups fact
+  set_fact:
+    _aws_ec2_existing_security_groups: >
+     {{ _aws_ec2_existing.instances[0] | json_query('groups[*].name') | sort }}
+
+- name: set Ansible EC2 config file security groups fact
+  set_fact:
+    _aws_ec2_ansible_security_groups: >
+     {{ _aws_ec2_i['group'] | default(omit)  | sort }}
+
+- name: check for security groups not controlled by ansible
+  set_fact:
+    _aws_ec2_untracked_security_groups: >
+     {{ _aws_ec2_existing_security_groups | difference(_aws_ec2_ansible_security_groups) | sort }}
+
+- name: call optional notifier for untracked ec2 instance security groups
+  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  vars:
+    message:
+    attachments:
+          - color: warning
+            mrkdwn_in: ['text']
+            text: >
+              *WARNING:* security
+              group{%if _aws_ec2_untracked_security_groups.__len__() != 1 %}s{% endif %}
+              {% for sg in _aws_ec2_untracked_security_groups -%}
+              <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#SecurityGroups:groupName=^{{
+                sg
+              }}$;vpcId={{
+                _aws_vpc_id
+              }}">{{ sg }}</a>
+              {%- if not loop.last %}, {% endif -%}
+              {% endfor %}
+              exist{%if _aws_ec2_untracked_security_groups.__len__() == 1 %}s{% endif %}
+              for Instance <a href="https://console.aws.amazon.com/ec2/v2/home?region={{
+                aws_region
+              }}#Instances:tag:Function={{
+                _aws_ec2_i["function"]
+              }}">{{
+                _aws_ec2_i["function"]
+              }}</a>
+              but
+              {% if _aws_ec2_untracked_security_groups.__len__() == 1 %}is{% else %}are{% endif %}
+              not configured by Ansible
+
+
+  when: >
+   notifier_role is defined and
+   _aws_ec2_untracked_security_groups | length != 0
