@@ -26,7 +26,8 @@
 
 - name: clear _aws_ec2_launch from possible earlier launches
   set_fact:
-    _aws_ec2_launch: {}
+    _aws_ec2_launch:
+      changed: False
 
 - block:
 
