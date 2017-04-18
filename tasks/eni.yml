@@ -42,16 +42,16 @@
           Environment: '{{ _aws_ec2_i["environment"] }}'
           VPC: '{{ aws_vpc_name }}'
 
-    - name: associate Elastic IP address with network interface
-      ec2_eip:
-        device_id: '{{ _aws_ec2_eni_id }}'
-        in_vpc: yes
-        profile: '{{ aws_profile }}'
-        public_ip: '{{ _aws_ec2_i["public_ip"] | default(omit) }}'
-        region: '{{ aws_region }}'
-      when: >
-        ( _aws_ec2_i["assign_public_ip"] is defined and
-          _aws_ec2_i["assign_public_ip"] ) or
-        _aws_ec2_i["public_ip"] is defined
-
   when: _aws_ec2_eni_facts.network_interfaces | length == 0
+
+- name: associate Elastic IP address with network interface
+  ec2_eip:
+    device_id: '{{ _aws_ec2_eni_id }}'
+    in_vpc: yes
+    profile: '{{ aws_profile }}'
+    public_ip: '{{ _aws_ec2_i["public_ip"] | default(omit) }}'
+    region: '{{ aws_region }}'
+  when: >
+    ( _aws_ec2_i["assign_public_ip"] is defined and
+      _aws_ec2_i["assign_public_ip"] ) or
+    _aws_ec2_i["public_ip"] is defined
