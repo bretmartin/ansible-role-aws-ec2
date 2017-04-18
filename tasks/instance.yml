@@ -171,4 +171,5 @@
 
   when: >
     notifier_role is defined and
+    _aws_ec2_launch is defined and
     _aws_ec2_launch.changed

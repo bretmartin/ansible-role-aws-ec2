@@ -51,4 +51,9 @@
       {{ _aws_ec2_i["volumes"]
          | default(aws_ec2_instance_defaults["volumes"]) }}
 
-  register: _aws_ec2_launch
+  register: _aws_ec2_ec2
+
+- name: save results if an EC2 launch occurred
+  set_fact:
+    _aws_ec2_launch: '{{ _aws_ec2_ec2 }}'
+  when: _aws_ec2_ec2.changed
