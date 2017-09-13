@@ -9,10 +9,10 @@
 - name: check for existing domain join SSM document
   command: >
     aws ssm list-documents
-            --query
-              'DocumentIdentifiers[*]
-               | [?Name == `{{ _aws_ec2_domain_join_ssm_document }}`].Name'
-            --max-results 25
+            --document-filter-list
+              'key=Name,value={{ _aws_ec2_domain_join_ssm_document }}'
+            --query 'DocumentIdentifiers[*].Name'
+            --max-results 1
             --output text
             --profile '{{ aws_profile }}'
   register: _aws_ec2_existing_ssm_document
