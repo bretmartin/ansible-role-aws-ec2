@@ -4,7 +4,7 @@
   ec2_remote_facts:
     filters:
       instance-state-name:
-        ['pending', 'running', 'shutting-down', 'stopping', 'stopped']
+        ['pending', 'running', 'stopping', 'stopped']
       'tag:Name':        '{{ _aws_ec2_i["hostname"] }}'
       'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
       'tag:Function':    '{{ _aws_ec2_i["function"] }}'
