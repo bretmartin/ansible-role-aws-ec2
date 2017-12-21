@@ -1,0 +1,46 @@
+---
+
+- block:
+
+  - name: find AMI
+    ec2_ami_find:
+      profile: '{{ aws_profile }}'
+      region: '{{ aws_region }}'
+      architecture: >-
+        {{ _aws_ec2_i.image_filters.architecture        | default(None) }}
+      hypervisor: >-
+        {{ _aws_ec2_i.image_filters.hypervisor          | default(None) }}
+      is_public: >-
+        {{ _aws_ec2_i.image_filters.is_public           | default(None) }}
+      name: >-
+        {{ _aws_ec2_i.image_filters.name                | default(None) }}
+      owner: >-
+        {{ _aws_ec2_i.image_filters.owner               | default(None) }}
+      platform: >-
+        {{ _aws_ec2_i.image_filters.platform            | default(None) }}
+      sort: >-
+        {{ _aws_ec2_i.image_filters.sort                | default(None) }}
+      sort_order: >-
+        {{ _aws_ec2_i.image_filters.sort_order          | default(None) }}
+      state: >-
+        {{ _aws_ec2_i.image_filters.state               | default(None) }}
+      virtualization_type: >-
+        {{ _aws_ec2_i.image_filters.virtualization_type | default(None) }}
+    register: _aws_ec2_ami
+
+  - set_fact:
+      _aws_ec2_ami_id: '{{ _aws_ec2_ami.results.0.ami_id }}'
+
+  when: _aws_ec2_i.image_filters is defined
+
+- set_fact:
+    _aws_ec2_ami_id: >-
+      {{ _aws_ec2_i["image"]
+         | default(aws_ec2_instance_defaults["image"]) }}
+  when: _aws_ec2_i.image_filters is not defined
+
+- name: call optional notifier
+  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  vars:
+    message: selected AMI <b>{{ _aws_ec2_ami_id }}</b>
+  when: notifier_role is defined

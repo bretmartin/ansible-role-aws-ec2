@@ -16,6 +16,9 @@
 
 - block:
 
+    - name: select an image
+      include: roles/aws-ec2/tasks/ami.yml
+
     - name: select a subnet
       include: roles/aws-ec2/tasks/subnet.yml
 

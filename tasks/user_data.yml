@@ -2,7 +2,7 @@
 
 - name: retrieve AMI facts
   ec2_ami_find:
-    ami_id: '{{ _aws_ec2_i["image"] | default(aws_ec2_instance_defaults["image"]) }}'
+    ami_id: '{{ _aws_ec2_ami_id }}'
     profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
   register: _aws_ec2_ami_facts

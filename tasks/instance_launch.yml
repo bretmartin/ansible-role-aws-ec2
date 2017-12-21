@@ -11,8 +11,7 @@
          | default(aws_ec2_instance_defaults["key_name"]) }}
     instance_type: >-
       {{ _aws_ec2_i["type"] | default(aws_ec2_instance_defaults["type"]) }}
-    image: >-
-      {{ _aws_ec2_i["image"] | default(aws_ec2_instance_defaults["image"]) }}
+    image: '{{ _aws_ec2_ami_id }}'
 
     wait: True
 
