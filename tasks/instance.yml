@@ -1,7 +1,7 @@
 ---
 
 - name: check for existing instances
-  ec2_remote_facts:
+  ec2_instance_facts:
     profile:        '{{ aws_profile }}'
     aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
     aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
