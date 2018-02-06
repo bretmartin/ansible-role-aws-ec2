@@ -2,6 +2,11 @@
 
 - name: check for existing instances
   ec2_remote_facts:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
     filters:
       instance-state-name:
         ['pending', 'running', 'stopping', 'stopped']
@@ -10,7 +15,6 @@
       'tag:Function':    '{{ _aws_ec2_i["function"] }}'
       'tag:RI ID':       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
       'tag:VPC':         '{{ aws_vpc_name }}'
-    profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
   register: _aws_ec2_existing
 

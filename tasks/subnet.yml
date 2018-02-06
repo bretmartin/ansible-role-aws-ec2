@@ -2,11 +2,15 @@
 
 - name: list subnets matching specified type and availability zone
   ec2_vpc_subnet_facts:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
     filters:
       availability-zone: '{{ _aws_ec2_i["az"] | default("*") }}'
       'tag:Name': '{{ _aws_ec2_i["subnet_type"] }}'
       vpc-id: '{{ _aws_vpc_id }}'
-    profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
   register: _aws_ec2_subnet_facts
 

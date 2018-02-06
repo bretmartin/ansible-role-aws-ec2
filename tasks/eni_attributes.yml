@@ -2,9 +2,13 @@
 
 - name: set network interface attributes
   ec2_eni:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
     eni_id: '{{ network_interface }}'
     delete_on_termination: False
-    profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
     source_dest_check: '{{ _aws_ec2_i["source_dest_check"] | default(omit) }}'
     subnet_id: '{{ _aws_ec2_subnet }}'

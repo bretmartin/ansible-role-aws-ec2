@@ -2,11 +2,15 @@
 
 - name: find network interface ID
   ec2_eni_facts:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
     filters:
       'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
       'tag:Name': '{{ _aws_ec2_i["function"] }}'
       vpc-id: '{{ _aws_vpc_id }}'
-    profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
   register: _aws_ec2_eni_facts
 
@@ -20,7 +24,11 @@
 
     - name: create network interface
       ec2_eni:
-        profile: '{{ aws_profile }}'
+        profile:        '{{ aws_profile }}'
+        aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+        aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+        security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
         private_ip_address: '{{ _aws_ec2_i["private_ip"] | default(omit) }}'
         region: '{{ aws_region }}'
         security_groups: '{{ _aws_ec2_i["group"] }}'
@@ -33,8 +41,11 @@
 
     - name: tag network interface
       ec2_tag:
-      args:
-        profile: '{{ aws_profile }}'
+        profile:        '{{ aws_profile }}'
+        aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+        aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+        security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
         region: '{{ aws_region }}'
         resource: '{{ _aws_ec2_eni_id }}'
         tags:
@@ -46,9 +57,13 @@
 
 - name: associate Elastic IP address with network interface
   ec2_eip:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
     device_id: '{{ _aws_ec2_eni_id }}'
     in_vpc: yes
-    profile: '{{ aws_profile }}'
     public_ip: '{{ _aws_ec2_i["public_ip"] | default(omit) }}'
     region: '{{ aws_region }}'
   when: >
