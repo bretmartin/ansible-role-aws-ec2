@@ -21,13 +21,13 @@
 - block:
 
     - name: select an image
-      include: roles/aws-ec2/tasks/ami.yml
+      include_tasks: ami.yml
 
     - name: select a subnet
-      include: roles/aws-ec2/tasks/subnet.yml
+      include_tasks: subnet.yml
 
     - name: construct instance user data
-      include: roles/aws-ec2/tasks/user_data.yml
+      include_tasks: user_data.yml
 
   when: _aws_ec2_existing.instances | length == 0
 
@@ -39,15 +39,15 @@
 - block:
 
     - name: configure Elastic Network Interface
-      include: roles/aws-ec2/tasks/eni.yml
+      include_tasks: eni.yml
 
     - name: launch EC2 instance using configured network interface
-      include: roles/aws-ec2/tasks/instance_launch.yml
+      include_tasks: instance_launch.yml
       vars:
         network_interface: '{{ _aws_ec2_eni_id }}'
 
     - name: set network interface attributes
-      include: roles/aws-ec2/tasks/eni_attributes.yml
+      include_tasks: eni_attributes.yml
       vars:
         network_interface: '{{ _aws_ec2_eni_id }}'
 
@@ -57,7 +57,7 @@
     _aws_ec2_existing.instances | length == 0
 
 - name: launch EC2 instance
-  include: roles/aws-ec2/tasks/instance_launch.yml
+  include_tasks: instance_launch.yml
   vars:
     vpc_subnet_id: '{{ _aws_ec2_subnet | default(omit) }}'
     group: '{{ _aws_ec2_i["group"] | default(omit) }}'
@@ -70,14 +70,14 @@
     _aws_ec2_existing.instances | length == 0
 
 - name: configure Windows domain join with EC2 Systems Manager
-  include: roles/aws-ec2/tasks/instance_windows_domain_join.yml
+  include_tasks: instance_windows_domain_join.yml
   when: >
     _aws_ec2_launch.changed and
     _aws_ec2_i["windows_domain_join"] is defined and
     _aws_ec2_i["windows_domain_join"]
 
 - name: call optional notifier
-  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
   vars:
     message: >
       launched <b>{{ _aws_ec2_i["description"] }} instance</b>

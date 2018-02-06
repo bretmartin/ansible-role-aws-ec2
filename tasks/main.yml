@@ -17,7 +17,7 @@
          if aws_ec2_target_environment is defined else [""] }}
 
 - name: call optional notifier
-  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
   vars:
     message: >
       started running role <b>aws-ec2</b> on
@@ -37,16 +37,18 @@
   when: notifier_role is defined
 
 - name: find VPC ID
-  include: roles/aws-vpc/tasks/vpc_id.yml
+  include_role:
+    name: aws-vpc
+    tasks_from: vpc_id
 
 - name: collect instance configuration data
-  include: instances_load_vars.yml
+  include_tasks: instances_load_vars.yml
   with_fileglob: 'host_vars/{{ inventory_hostname }}/ec2/*.yml'
   loop_control:
     loop_var: _aws_ec2_vars_file
 
 - name: launch target instances
-  include: instance.yml
+  include_tasks: instance.yml
   with_items: '{{ _aws_ec2_target_instances }}'
   loop_control:
     label: >-
@@ -56,7 +58,7 @@
     loop_var: _aws_ec2_i
 
 - name: call optional notifier
-  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
   vars:
     message: >
       finished running role <b>aws-ec2</b> on

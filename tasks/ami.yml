@@ -44,7 +44,7 @@
   when: _aws_ec2_i.image_filters is not defined
 
 - name: call optional notifier
-  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
   vars:
     message: selected AMI <b>{{ _aws_ec2_ami_id }}</b>
   when: notifier_role is defined
