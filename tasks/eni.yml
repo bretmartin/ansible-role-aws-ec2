@@ -8,6 +8,7 @@
     security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
 
     filters:
+      status: available
       'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
       'tag:Name': '{{ _aws_ec2_i["function"] }}'
       vpc-id: '{{ _aws_vpc_id }}'
