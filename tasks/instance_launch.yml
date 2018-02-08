@@ -26,20 +26,8 @@
 
     user_data: '{{ _aws_ec2_user_data | default(omit) }}'
 
-    instance_tags:
-      Name:        '{{ _aws_ec2_i["hostname"] }}'
-      Environment: '{{ _aws_ec2_i["environment"] }}'
-      Function:    '{{ _aws_ec2_i["function"] }}'
-      RI ID:       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
-      VPC:         '{{ aws_vpc_name }}'
-
-    count_tag:
-      Name:        '{{ _aws_ec2_i["hostname"] }}'
-      Environment: '{{ _aws_ec2_i["environment"] }}'
-      Function:    '{{ _aws_ec2_i["function"] }}'
-      RI ID:       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
-      VPC:         '{{ aws_vpc_name }}'
-
+    instance_tags: '{{ _aws_ec2_all_instance_tags }}'
+    count_tag: '{{ aws_ec2_standard_instance_tags }}'
     exact_count:   1
 
     vpc_subnet_id:     '{{ vpc_subnet_id     | default(omit) }}'

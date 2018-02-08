@@ -1,0 +1,7 @@
+---
+
+aws_ec2_standard_instance_tags:
+  Name:        '{{ _aws_ec2_i["hostname"] }}'
+  Environment: '{{ _aws_ec2_i["environment"] }}'
+  Function:    '{{ _aws_ec2_i["function"] }}'
+  VPC:         '{{ aws_vpc_name }}'

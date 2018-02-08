@@ -1,5 +1,31 @@
 ---
 
+- name: load standard instance tags
+  include_vars: aws-ec2-standard-instance-tags.yml
+
+- name: load extra instance tags
+  include_vars: aws-ec2-extra-instance-tags.yml
+
+- name: combine standard and extra instance tags into full tag set
+  set_fact:
+    _aws_ec2_all_instance_tags: >-
+      {{
+                 (aws_ec2_standard_instance_tags | default({}))
+        | combine(   aws_ec2_extra_instance_tags | default({}))
+      }}
+
+- name: format standard instance tags for use as AWS API filters
+  set_fact:
+    _aws_ec2_standard_instance_tags_filters: >-
+      {{
+        _aws_ec2_standard_instance_tags_filters
+        | default({})
+        | combine({"tag:" + item.key: item.value})
+      }}
+  with_dict: '{{ aws_ec2_standard_instance_tags }}'
+  loop_control:
+    label: 'tag {{ item.key }}'
+
 - name: check for existing instances
   ec2_instance_facts:
     profile:        '{{ aws_profile }}'
@@ -7,14 +33,12 @@
     aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
     security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
 
-    filters:
-      instance-state-name:
-        ['pending', 'running', 'stopping', 'stopped']
-      'tag:Name':        '{{ _aws_ec2_i["hostname"] }}'
-      'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
-      'tag:Function':    '{{ _aws_ec2_i["function"] }}'
-      'tag:RI ID':       '{{ _aws_ec2_i["ri_id"] | default(None) }}'
-      'tag:VPC':         '{{ aws_vpc_name }}'
+    filters: >-
+      {{
+        {"instance-state-name": ["pending", "running", "stopping", "stopped"]}
+        | combine(_aws_ec2_standard_instance_tags_filters)
+      }}
+
     region: '{{ aws_region }}'
   register: _aws_ec2_existing
 
