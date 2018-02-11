@@ -14,8 +14,9 @@
 - name: construct instance user data
   set_fact:
     _aws_ec2_user_data:
-      '{{ lookup("template",
-                 playbook_dir
-                 + "/roles/aws-ec2/templates/user_data/"
-                 + (_aws_ec2_ami_facts.results[0].platform or "linux")
-                 + ".j2") }}'
+      '{{ _aws_ec2_i["user_data"]
+          | default(lookup("template",
+                           playbook_dir
+                           + "/roles/aws-ec2/templates/user_data/"
+                           + (_aws_ec2_ami_facts.results[0].platform or "linux")
+                           + ".j2")) }}'
