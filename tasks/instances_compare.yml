@@ -1,0 +1,39 @@
+- name: list all instances
+  ec2_remote_facts:
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  register: _aws_ec2_all_instances
+
+- name: set existing AWS instance names fact
+  set_fact:
+    _aws_ec2_existing_names: >
+      {{ _aws_ec2_all_instances.instances | json_query('[*].tags.Name') }}
+
+- debug:
+    msg: "{{ _aws_ec2_existing_names }}"
+
+- name: set existing Ansible instance names fact
+  set_fact:
+    _aws_ec2_configured_instance_names: >
+      {{ _aws_ec2_configured_instances | json_query('[*].hostname') }}
+
+- debug:
+    msg: "{{ _aws_ec2_configured_instance_names }}"
+
+- name: set unmanaged instances fact
+  set_fact:
+    _aws_ec2_unmanaged_instances: >
+      {{ _aws_ec2_existing_names | difference(_aws_ec2_configured_instance_names) | sort  }}
+
+- name: call optional notifier for non-ansible managed instances
+  include: 'roles/{{ notifier_role }}/tasks/main.yml'
+  vars:
+    message: >
+      unmanaged instance{%if _aws_ec2_unmanaged_instances.__len__() != 1 %}s{% endif %}
+      {% for instance_name in _aws_ec2_unmanaged_instances -%}{{ instance_name }}
+      {%- if not loop.last %}, {% endif -%}
+      {% endfor %}
+      in <a href="{{ _aws_vpc_url }}">VPC {{ aws_vpc_name }}</a>
+  when: >
+    notifier_role is defined and
+    _aws_ec2_unmanaged_instances

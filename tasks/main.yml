@@ -47,6 +47,9 @@
   loop_control:
     loop_var: _aws_ec2_vars_file
 
+- name: compare ansible instances against aws instances
+  include: instances_compare.yml
+
 - name: launch target instances
   include_tasks: instance.yml
   with_items: '{{ _aws_ec2_target_instances }}'
