@@ -17,9 +17,13 @@
     'aws_ec2_instances' in _aws_ec2_vars
   loop_control:
     label: >-
-      function {{ _aws_ec2_i.function
-                  | default(aws_ec2_instance_defaults.function) }},
-      environment {{ _aws_ec2_i.environment
-                     | default(aws_ec2_instance_defaults.environment) }},
+      function {{
+        _aws_ec2_i.function
+        | default(aws_ec2_instance_defaults.function)
+      }},
+      environment {{
+        _aws_ec2_i.environment
+        | default(aws_ec2_instance_defaults.environment)
+      }},
       hostname {{ _aws_ec2_i.hostname }}'
     loop_var: _aws_ec2_i
