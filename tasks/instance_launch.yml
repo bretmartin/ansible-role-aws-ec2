@@ -12,7 +12,7 @@
 
     key_name: '{{ _aws_ec2_i["key_name"] }}'
     instance_type: '{{ _aws_ec2_i["type"] }}'
-    image: '{{ _aws_ec2_ami_id }}'
+    image: '{{ _aws_ec2_ami["image_id"] }}'
 
     wait: True
 

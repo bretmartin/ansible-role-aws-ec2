@@ -1,16 +1,5 @@
 ---
 
-- name: retrieve AMI facts
-  ec2_ami_find:
-    profile:        '{{ aws_profile }}'
-    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
-    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
-    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
-
-    ami_id: '{{ _aws_ec2_ami_id }}'
-    region: '{{ aws_region }}'
-  register: _aws_ec2_ami_facts
-
 - name: construct instance user data
   set_fact:
     _aws_ec2_user_data:
@@ -18,5 +7,5 @@
           | default(lookup("template",
                            playbook_dir
                            + "/roles/aws-ec2/templates/user_data/"
-                           + (_aws_ec2_ami_facts.results[0].platform or "linux")
+                           + (_aws_ec2_ami["platform"] | default("linux"))
                            + ".j2")) }}'
