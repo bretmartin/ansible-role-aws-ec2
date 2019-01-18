@@ -59,7 +59,7 @@
     label: >-
       function {{ _aws_ec2_i.function }},
       environment {{ _aws_ec2_i.environment }},
-      hostname {{ _aws_ec2_i.hostname }}'
+      hostname {{ _aws_ec2_i.hostname }}
     loop_var: _aws_ec2_i
 
 - name: call optional notifier
