@@ -10,19 +10,13 @@
 
     region: '{{ aws_region }}'
 
-    key_name: >-
-      {{ _aws_ec2_i["key_name"]
-         | default(aws_ec2_instance_defaults["key_name"]) }}
-    instance_type: >-
-      {{ _aws_ec2_i["type"] | default(aws_ec2_instance_defaults["type"]) }}
+    key_name: '{{ _aws_ec2_i["key_name"] }}'
+    instance_type: '{{ _aws_ec2_i["type"] }}'
     image: '{{ _aws_ec2_ami_id }}'
 
     wait: True
 
-    instance_profile_name: >-
-      {{ _aws_ec2_i["profile"]
-         | default(aws_ec2_instance_defaults["profile"])
-         | default(omit) }}
+    instance_profile_name: '{{ _aws_ec2_i["profile"] | default(omit) }}'
 
     user_data: '{{ _aws_ec2_user_data | default(omit) }}'
 
@@ -38,9 +32,7 @@
 
     network_interface: '{{ network_interface | default(omit) }}'
 
-    volumes: >-
-      {{ _aws_ec2_i["volumes"]
-         | default(aws_ec2_instance_defaults["volumes"]) }}
+    volumes: '{{ _aws_ec2_i["volumes"] }}'
 
   register: _aws_ec2_ec2
 
