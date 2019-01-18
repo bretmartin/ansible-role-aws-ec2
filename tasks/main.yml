@@ -49,7 +49,12 @@
 
 - name: launch target instances
   include_tasks: instance.yml
-  with_items: '{{ _aws_ec2_target_instances }}'
+  with_items: '{{ _aws_ec2_configured_instances }}'
+  when: >
+    ( _aws_ec2_i.function in _aws_ec2_target_functions or
+      _aws_ec2_target_functions == [""] ) and
+    ( _aws_ec2_i.environment in _aws_ec2_target_environments or
+      _aws_ec2_target_environments == [""] )
   loop_control:
     label: >-
       function {{ _aws_ec2_i.function }},

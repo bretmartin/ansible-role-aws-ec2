@@ -20,23 +20,3 @@
       environment {{ _aws_ec2_i.environment }},
       hostname {{ _aws_ec2_i.hostname }}'
     loop_var: _aws_ec2_i
-
-- name: add instance to target list if function and environment match
-  set_fact:
-    _aws_ec2_target_instances: >-
-      {{ _aws_ec2_target_instances
-         | default([])
-         | union([_aws_ec2_i]) }}
-  with_items: '{{ _aws_ec2_vars["aws_ec2_instances"] }}'
-  when: >
-    'aws_ec2_instances' in _aws_ec2_vars and
-    ( _aws_ec2_i.function in _aws_ec2_target_functions or
-      _aws_ec2_target_functions == [""] ) and
-    ( _aws_ec2_i.environment in _aws_ec2_target_environments or
-      _aws_ec2_target_environments == [""] )
-  loop_control:
-    label: >-
-      function {{ _aws_ec2_i.function }},
-      environment {{ _aws_ec2_i.environment }},
-      hostname {{ _aws_ec2_i.hostname }}'
-    loop_var: _aws_ec2_i
