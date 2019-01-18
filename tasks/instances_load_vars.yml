@@ -8,15 +8,18 @@
 - name: add instances to configured list
   set_fact:
     _aws_ec2_configured_instances: >-
-      {{ _aws_ec2_configured_instances
-         | default([])
-         | union([_aws_ec2_i]) }}
+      {{
+        (_aws_ec2_configured_instances | default([])) +
+        [(aws_ec2_instance_defaults | combine(_aws_ec2_i, recursive=True))]
+      }}
   with_items: '{{ _aws_ec2_vars["aws_ec2_instances"] }}'
   when: >
     'aws_ec2_instances' in _aws_ec2_vars
   loop_control:
     label: >-
-      function {{ _aws_ec2_i.function }},
-      environment {{ _aws_ec2_i.environment }},
+      function {{ _aws_ec2_i.function
+                  | default(aws_ec2_instance_defaults.function) }},
+      environment {{ _aws_ec2_i.environment
+                     | default(aws_ec2_instance_defaults.environment) }},
       hostname {{ _aws_ec2_i.hostname }}'
     loop_var: _aws_ec2_i
