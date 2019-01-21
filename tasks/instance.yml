@@ -20,11 +20,13 @@
       {{
         _aws_ec2_standard_instance_tags_filters
         | default({})
-        | combine({"tag:" + item.key: item.value})
+        | combine({"tag:" + _aws_ec2_standard_instance_tag_name.key:
+                            _aws_ec2_standard_instance_tag_name.value})
       }}
   with_dict: '{{ aws_ec2_standard_instance_tags }}'
   loop_control:
-    label: 'tag {{ item.key }}'
+    label: 'tag {{ _aws_ec2_standard_instance_tag_name.key }}'
+    loop_var: _aws_ec2_standard_instance_tag_name
 
 - name: check for existing instances
   ec2_instance_facts:
