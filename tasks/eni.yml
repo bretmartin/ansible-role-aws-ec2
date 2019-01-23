@@ -2,16 +2,12 @@
 
 - name: find network interface ID
   ec2_eni_facts:
-    profile:        '{{ aws_profile }}'
-    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
-    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
-    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
-
     filters:
       status: available
       'tag:Environment': '{{ _aws_ec2_i["environment"] }}'
       'tag:Name': '{{ _aws_ec2_i["function"] }}'
       vpc-id: '{{ _aws_vpc_id }}'
+    profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
   register: _aws_ec2_eni_facts
 
@@ -25,12 +21,8 @@
 
     - name: create network interface
       ec2_eni:
-        profile:        '{{ aws_profile }}'
-        aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
-        aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
-        security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
-
         private_ip_address: '{{ _aws_ec2_i["private_ip"] | default(omit) }}'
+        profile: '{{ aws_profile }}'
         region: '{{ aws_region }}'
         security_groups: '{{ _aws_ec2_i["group"] }}'
         subnet_id: '{{ _aws_ec2_subnet }}'
@@ -42,11 +34,7 @@
 
     - name: tag network interface
       ec2_tag:
-        profile:        '{{ aws_profile }}'
-        aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
-        aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
-        security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
-
+        profile: '{{ aws_profile }}'
         region: '{{ aws_region }}'
         resource: '{{ _aws_ec2_eni_id }}'
         tags:
