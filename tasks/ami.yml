@@ -2,13 +2,10 @@
 
 - name: find AMI
   ec2_ami_facts:
-    profile: '{{ aws_profile }}'
-    # this Ansible module supports automatic role assumption
-
     filters:  '{{ _aws_ec2_i.image_filters | default(omit) }}'
     image_id: '{{ _aws_ec2_i.image         | default(omit) }}'
     owner:    '{{ _aws_ec2_i.image_owner   | default(omit) }}'
-
+    profile: '{{ aws_profile }}'
     region: '{{ aws_region }}'
   register: _aws_ec2_ami_facts
 
