@@ -17,7 +17,8 @@
          if aws_ec2_target_environment is defined else [""] }}
 
 - name: call optional notifier
-  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_role:
+    name: '{{ notifier_role }}'
   vars:
     message: >
       started running role <b>aws-ec2</b> on
@@ -63,7 +64,8 @@
     loop_var: _aws_ec2_i
 
 - name: call optional notifier
-  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_role:
+    name: '{{ notifier_role }}'
   vars:
     message: >
       finished running role <b>aws-ec2</b> on

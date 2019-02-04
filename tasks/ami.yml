@@ -22,7 +22,8 @@
       }}
 
 - name: call optional notifier
-  include_tasks: 'roles/{{ notifier_role }}/tasks/main.yml'
+  include_role:
+    name: '{{ notifier_role }}'
   vars:
     message: selected AMI <b>{{ _aws_ec2_ami.image_id }}</b>
   when: notifier_role is defined
