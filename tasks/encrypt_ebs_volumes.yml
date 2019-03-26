@@ -1,0 +1,250 @@
+---
+
+- name: locate specified instance
+  ec2_instance_facts:
+    filters:
+      instance-state-name: ["running", "stopping", "stopped"]
+      'tag:Environment': '{{ aws_ec2_target_environment }}'
+      'tag:Function': '{{ aws_ec2_target_function }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  register: _aws_ec2_encrypt_ebs_volumes_instances
+
+- name: confirm that only one instance was located
+  assert:
+    fail_msg: More than one instances matches the specified filters
+    success_msg: Only one instance matches the specified filters
+    that: _aws_ec2_encrypt_ebs_volumes_instances.instances | length == 1
+
+- name: set instance facts dictionary fact
+  set_fact:
+    _aws_ec2_encrypt_ebs_volumes_instance: >-
+      {{ _aws_ec2_encrypt_ebs_volumes_instances.instances.0 }}
+
+- name: stop instance
+  ec2_instance:
+    instance_ids: '{{ _aws_ec2_encrypt_ebs_volumes_instance.instance_id }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+    state: stopped
+
+- name: gather volume facts
+  ec2_vol_facts:
+    filters:
+      volume-id: '{{ item.ebs.volume_id }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_instance.block_device_mappings }}'
+  loop_control:
+    label: '{{ item.ebs.volume_id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_original_volumes
+
+- name: detach volumes
+  ec2_vol:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
+    id: '{{ item.ebs.volume_id }}'
+    instance: None
+    region: '{{ aws_region }}'
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_instance.block_device_mappings }}'
+  loop_control:
+    label: '{{ item.ebs.volume_id }}'
+
+- name: wait for volumes to be "available"
+  ec2_vol_facts:
+    filters:
+      status: available
+      volume-id: '{{ item.ebs.volume_id }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  delay: 15
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_instance.block_device_mappings }}'
+  loop_control:
+    label: '{{ item.ebs.volume_id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_original_volumes_available
+  retries: 120
+  until: >
+    _aws_ec2_encrypt_ebs_volumes_original_volumes_available.volumes
+    | length == 1
+
+- name: build dictionary of volume facts indexed by volume ID
+  set_fact:
+    _aws_ec2_encrypt_ebs_volumes_original_volume_facts: >-
+      {{
+        _aws_ec2_encrypt_ebs_volumes_original_volume_facts
+        | default({})
+        | combine({
+            item.ebs.volume_id:
+              (_aws_ec2_encrypt_ebs_volumes_original_volumes.results
+               | json_query(
+                   "[? item.ebs.volume_id
+                       == `" + item.ebs.volume_id + "`].volumes[0]
+                    | [0]"
+                 )
+              )
+          })
+      }}
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_instance.block_device_mappings }}'
+  loop_control:
+    label: '{{ item.device_name }}'
+
+- name: confirm that instance ID and device names match up
+  assert:
+    fail_msg: either device name, instance ID, or both don't match
+    success_msg: device name and instance ID match as expected
+    that:
+      - >-
+        item.device_name
+        ==
+        _aws_ec2_encrypt_ebs_volumes_original_volume_facts
+        [item.ebs.volume_id]
+        .attachment_set
+        .device
+      - >-
+        _aws_ec2_encrypt_ebs_volumes_instance.instance_id
+        ==
+        _aws_ec2_encrypt_ebs_volumes_original_volume_facts
+        [item.ebs.volume_id]
+        .attachment_set
+        .instance_id
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_instance.block_device_mappings }}'
+  loop_control:
+    label: '{{ item.device_name }}'
+
+- name: tag volumes with original instance and attachment data
+  ec2_tag:
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+    resource: '{{ item.id }}'
+    tags:
+      Original Availability Zone:
+        '{{ item.zone }}'
+      Original Device Name:
+        '{{ item.attachment_set.device }}'
+      Original Instance ID:
+        '{{ item.attachment_set.instance_id }}'
+      Original Termination Behavior:
+        '{{ item.attachment_set.delete_on_termination }}'
+      Original Volume Type:
+        '{{ item.type }}'
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_original_volume_facts.values() }}'
+  loop_control:
+    label: '{{ item.id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_original_volume_tags
+
+- name: create unencrypted snapshots
+  ec2_snapshot:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
+    region: '{{ aws_region }}'
+    snapshot_tags: '{{ item.invocation.module_args.tags }}'
+    volume_id: '{{ item.invocation.module_args.resource }}'
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_original_volume_tags.results }}'
+  loop_control:
+    label: '{{ item.invocation.module_args.resource }}'
+  register: _aws_ec2_encrypt_ebs_volumes_unencrypted_snapshots
+
+- name: wait for snapshots to be "completed"
+  ec2_snapshot_facts:
+    filters:
+      snapshot-id: '{{ item.snapshot_id }}'
+      status: completed
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  delay: 15
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_unencrypted_snapshots.results }}'
+  loop_control:
+    label: '{{ item.snapshot_id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_unencrypted_snapshot_facts
+  retries: 120
+  until: >
+    _aws_ec2_encrypt_ebs_volumes_unencrypted_snapshot_facts.snapshots
+    | length == 1
+
+- name: copy to encrypted snapshots
+  ec2_snapshot_copy:
+    encrypted: true
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+    source_region: '{{ aws_region }}'
+    source_snapshot_id: '{{ item.snapshots.0.snapshot_id }}'
+    tags: '{{ item.snapshots.0.tags }}'
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_unencrypted_snapshot_facts.results }}'
+  loop_control:
+    label: '{{ item.snapshots.0.snapshot_id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_encrypted_snapshots
+
+- name: wait for encrypted snapshots to be "completed"
+  ec2_snapshot_facts:
+    filters:
+      snapshot-id: '{{ item.snapshot_id }}'
+      status: completed
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+  delay: 15
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_encrypted_snapshots.results }}'
+  loop_control:
+    label: '{{ item.snapshot_id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_encrypted_snapshot_facts
+  retries: 120
+  until: >
+    _aws_ec2_encrypt_ebs_volumes_encrypted_snapshot_facts.snapshots
+    | length == 1
+
+- name: create encrypted volumes
+  ec2_vol:
+    profile:        '{{ aws_profile }}'
+    aws_access_key: '{{ aws_iam_assume_role_access_key    | default(omit) }}'
+    aws_secret_key: '{{ aws_iam_assume_role_secret_key    | default(omit) }}'
+    security_token: '{{ aws_iam_assume_role_session_token | default(omit) }}'
+
+    delete_on_termination:
+      '{{ item.snapshots.0.tags["Original Termination Behavior"] }}'
+    device_name: '{{ item.snapshots.0.tags["Original Device Name"] }}'
+    encrypted: true
+    instance: '{{ item.snapshots.0.tags["Original Instance ID"] }}'
+    region: '{{ aws_region }}'
+    snapshot: '{{ item.snapshots.0.snapshot_id }}'
+    volume_type: '{{ item.snapshots.0.tags["Original Volume Type"] }}'
+    zone: '{{ item.snapshots.0.tags["Original Availability Zone"] }}'
+  loop: '{{ _aws_ec2_encrypt_ebs_volumes_encrypted_snapshot_facts.results }}'
+  loop_control:
+    label: '{{ item.snapshots.0.snapshot_id }}'
+  register: _aws_ec2_encrypt_ebs_volumes_encrypted_volumes
+
+- name: start instance
+  ec2_instance:
+    instance_ids: '{{ _aws_ec2_encrypt_ebs_volumes_instance.instance_id }}'
+    profile: '{{ aws_profile }}'
+    region: '{{ aws_region }}'
+    state: running
+
+- name: list entities to delete after confirmation
+  debug:
+    msg: |
+      After confirming that the new encrypted EBS volumes are working properly,
+      be sure to delete the following:
+
+      Original unencrypted EBS volumes
+      {% for block_device_mapping in
+             _aws_ec2_encrypt_ebs_volumes_instance.block_device_mappings %}
+      - {{ block_device_mapping.ebs.volume_id }}
+      {% endfor %}
+
+      Intermediate unencrypted EBS snapshots
+      {% for snapshot_facts in
+             _aws_ec2_encrypt_ebs_volumes_unencrypted_snapshots.results %}
+      - {{ snapshot_facts.snapshot_id }}
+      {% endfor %}
+
+      Intermediate encrypted EBS snapshots
+      {% for snapshot_facts in
+             _aws_ec2_encrypt_ebs_volumes_encrypted_snapshots.results %}
+      - {{ snapshot_facts.snapshot_id }}
+      {% endfor %}
