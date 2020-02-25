@@ -213,6 +213,7 @@
     snapshot: '{{ item.snapshots.0.snapshot_id }}'
     volume_type: '{{ item.snapshots.0.tags["Original Volume Type"] }}'
     zone: '{{ item.snapshots.0.tags["Original Availability Zone"] }}'
+    tags: '{{ _aws_ec2_all_instance_tags }}'
   loop: '{{ _aws_ec2_encrypt_ebs_volumes_encrypted_snapshot_facts.results }}'
   loop_control:
     label: '{{ item.snapshots.0.snapshot_id }}'
